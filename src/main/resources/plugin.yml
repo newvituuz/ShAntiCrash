@@ -1,0 +1,44 @@
+name: ShAntiCrash
+main: br.com.singlehope.shanticrash.ShAntiCrash
+version: ${project.version}
+description: Proteção contra crashes, exploits e pacotes malformados.
+authors:
+  - SingleHope
+api-version: 1.13
+folia-supported: true
+softdepend:
+  - ProtocolLib
+  - ViaVersion
+  - ViaBackwards
+  - ViaRewind
+  - Geyser-Spigot
+  - floodgate
+commands:
+  shanticrash:
+    description: Comando principal do ShAntiCrash.
+    usage: /shanticrash help
+    aliases: [sac]
+permissions:
+  shanticrash.admin:
+    description: Acesso a todos os subcomandos administrativos.
+    default: op
+    children:
+      shanticrash.alerts: true
+      shanticrash.alerts.printer: true
+      shanticrash.debug: true
+      shanticrash.reload: true
+  shanticrash.alerts:
+    description: Recebe alertas de detecção.
+    default: op
+  shanticrash.alerts.printer:
+    description: Recebe avisos de entrada e saída do modo printer.
+    default: op
+  shanticrash.debug:
+    description: Pode ativar diagnósticos por jogador.
+    default: op
+  shanticrash.reload:
+    description: Pode recarregar a configuração.
+    default: op
+  shanticrash.bypass:
+    description: Ignora os checks quando general.bypass-enabled está ativo.
+    default: false

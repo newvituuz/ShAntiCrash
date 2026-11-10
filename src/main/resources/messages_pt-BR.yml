@@ -1,0 +1,94 @@
+# Textos do ShAntiCrash. Formato MiniMessage: https://docs.advntr.dev/minimessage/format.html
+# %prefix% funciona em todas as mensagens. Valores vindos de jogadores e pacotes são sempre escapados.
+
+prefix: "<dark_purple>ShAntiCrash <dark_gray>»"
+
+kick: "<red>Conexão encerrada: pacotes suspeitos foram detectados."
+no-permission: "%prefix% <red>Você não tem permissão para isso. <gray>(%permission%)"
+invalid-arguments: "%prefix% <red>Argumentos inválidos. Use <gray>/shanticrash help"
+unknown-command: "<white>Unknown command. Type \"/help\" for help."
+players-only: "%prefix% <red>Este comando só pode ser usado por jogadores."
+player-not-found: "%prefix% <red>Jogador não encontrado: <gray>%player%"
+reload-ok: "%prefix% <green>Configuração recarregada."
+reload-failed: "%prefix% <red>config.yml inválido. A configuração anterior foi mantida; veja o console."
+version: "%prefix% <gray>ShAntiCrash Free <white>%version%"
+value-yes: "sim"
+value-no: "não"
+
+help:
+  - "%prefix% <gray>Comandos:"
+  - "<dark_gray>- <white>/shanticrash info <gray>Plataforma, integrações e contadores"
+  - "<dark_gray>- <white>/shanticrash stats <gray>Pacotes, conexões, risco e memória"
+  - "<dark_gray>- <white>/shanticrash profile <jogador|stop> <gray>Perfil de pacotes e checks de um jogador"
+  - "<dark_gray>- <white>/shanticrash reload <gray>Recarrega a configuração"
+  - "<dark_gray>- <white>/shanticrash alerts [on|off] <gray>Liga ou desliga seus alertas"
+  - "<dark_gray>- <white>/shanticrash alerts categoria <nome> <gray>Silencia uma categoria"
+  - "<dark_gray>- <white>/shanticrash check <jogador> <gray>Estado de um jogador"
+  - "<dark_gray>- <white>/shanticrash violations <jogador> <gray>Violações de um jogador"
+  - "<dark_gray>- <white>/shanticrash debug <jogador> <gray>Marca um jogador para diagnóstico"
+  - "<dark_gray>- <white>/shanticrash checks <gray>Lista os checks"
+  - "<dark_gray>- <white>/shanticrash version <gray>Versão do plugin"
+
+alerts:
+  format: "%prefix% <white>%player% <gray>falhou em <dark_purple>%check% <white>%type% <gray>(%vl%/%max-vl%)"
+  hover:
+    - "<dark_purple>Descrição: <gray>%description%"
+    - "<dark_purple>Detalhes: <gray>%infos%"
+  kicked: "%prefix% <white>%player% <gray>foi desconectado por <dark_purple>%check% <white>%type%"
+  enabled: "%prefix% <green>Alertas ativados."
+  disabled: "%prefix% <red>Alertas desativados."
+  category-enabled: "%prefix% <green>Categoria reativada: <gray>%category%"
+  category-disabled: "%prefix% <red>Categoria silenciada: <gray>%category%"
+
+printer:
+  join: "%prefix% <white>%player% <gray>entrou no modo printer."
+  leave: "%prefix% <white>%player% <gray>saiu do modo printer."
+
+info:
+  platform: "%prefix% <gray>Plataforma: <white>%platform% <gray>(%version%)"
+  protocol: "%prefix% <gray>Protocolo do servidor: <white>%protocol%"
+  checks: "%prefix% <gray>Checks ativos: <white>%enabled%<gray>/%total%"
+  players: "%prefix% <gray>Conexões monitoradas: <white>%players%"
+  integrations: "%prefix% <gray>ViaVersion: <white>%via% <gray>ViaBackwards: <white>%viab% <gray>ViaRewind: <white>%viar% <gray>Geyser: <white>%geyser% <gray>Floodgate: <white>%floodgate%"
+  packets: "%prefix% <gray>Pacotes: <white>%processed% <gray>Cancelados: <white>%cancelled% <gray>Violações: <white>%violations% <gray>Erros: <white>%errors%"
+
+check:
+  header: "%prefix% <gray>Jogador: <white>%player%"
+  client: "%prefix% <gray>Cliente: <white>%version% <gray>(protocolo %protocol%)"
+  state: "%prefix% <gray>Bedrock: <white>%bedrock% <gray>Criativo: <white>%creative% <gray>Printer: <white>%printer% <gray>Bypass: <white>%bypass% <gray>Multiplicador: <white>%multiplier%"
+  connected: "%prefix% <gray>Conectado às: <white>%time%"
+  risk: "%prefix% <gray>Risco: <white>%level% <gray>(pontuação %score%, fator de taxa %factor%)"
+
+stats:
+  packets: "%prefix% <gray>Pacotes: <white>%processed% <gray>(%rate%/s) Cancelados: <white>%cancelled% <gray>Violações: <white>%violations%"
+  errors: "%prefix% <gray>Erros internos: <white>%errors% <gray>Sem inspeção: <white>%uninspected% <gray>Conexões recusadas: <white>%rejected%"
+  connections: "%prefix% <gray>Conexões: <white>%connections% <gray>Endereços limitados: <white>%addresses% <gray>Memória aproximada: <white>%memory% KiB"
+  risk: "%prefix% <gray>Risco: <white>%low% <gray>baixo, <white>%moderate% <gray>moderado, <white>%high% <gray>alto, <white>%critical% <gray>crítico"
+  mode: "%prefix% <gray>Modo: <white>%mode% <gray>Perfis ativos: <white>%profiles% <gray>Itens sanitizados: <white>%sanitized%"
+  discord: "%prefix% <gray>Discord: <white>%sent% <gray>enviados, <white>%queued% <gray>na fila, <white>%dropped% <gray>descartados, <white>%failed% <gray>falhas"
+  kind: "<dark_gray>- <white>%kind% <gray>%count% pacotes, média %avg% µs, máximo %max% µs"
+
+profile:
+  started: "%prefix% <gray>Perfil de <white>%player% <gray>iniciado por %seconds%s. Use <white>/shanticrash profile stop <gray>para encerrar antes."
+  limit: "%prefix% <red>Já existem %max% perfis ativos."
+  none: "%prefix% <gray>Nenhum perfil ativo."
+  header: "%prefix% <gray>Perfil de <white>%player% <gray>(%seconds%s)"
+  rates: "<dark_gray>- <gray>Pacotes: <white>%pps%/s <gray>Bytes: <white>%bps%/s <gray>Total: <white>%packets% <gray>Cancelados: <white>%cancelled%"
+  latency: "<dark_gray>- <gray>Tempo no plugin por pacote: p50 <white>%p50% µs <gray>p95 <white>%p95% µs <gray>p99 <white>%p99% µs"
+  kinds: "<dark_gray>- <gray>Tipos: <white>%list%"
+  checks: "<dark_gray>- <gray>Checks executados: <white>%executed% <gray>Violações: <white>%flags%"
+  check: "<dark_gray>  <white>%check% <gray>%runs% execuções, média %avg% ns, %flags% violações"
+  memory: "<dark_gray>- <gray>Estado de proteção da conexão: <white>~%bytes% bytes"
+
+violations:
+  header: "%prefix% <gray>Violações de <white>%player%"
+  entry: "<dark_gray>- <white>%check% <gray>VL %vl%/%max-vl%, %flags% ocorrências"
+  history: "<dark_gray>  %time% <white>%check% <gray>%infos%"
+  none: "%prefix% <gray>Nenhuma violação nesta conexão."
+
+debug:
+  enabled: "%prefix% <gray>Diagnóstico ativado para <white>%player%"
+  disabled: "%prefix% <gray>Diagnóstico desativado para <white>%player%"
+
+checks:
+  category: "%prefix% <dark_purple>%category%<gray>: %list%"

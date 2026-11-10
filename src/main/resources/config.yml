@@ -1,0 +1,577 @@
+# ShAntiCrash Free - configuração
+#
+# Como os checks funcionam: cada check é independente e pode ter, em checks.<categoria>.<tipo>:
+#
+#   enabled: true            liga ou desliga o check
+#   cancel: true             descarta o pacote que violou o check
+#   alert: true              avisa quem tem shanticrash.alerts
+#   exempt-bedrock: false    não aplica o check a jogadores do Geyser/Floodgate
+#   vl:
+#     increment: 1           quanto cada violação soma
+#     multiplier: 1          fator a cada violação seguida (2 = 1, 2, 4...)
+#     decay-amount: 1        quanto é reduzido a cada intervalo
+#     decay-interval: 300    intervalo de redução, em segundos
+#     min: 0                 limite mínimo
+#     max: 100               limite máximo
+#     punish-at: 5           valor que dispara a punição
+#     alert-min: 1           valor mínimo para alertar
+#     reset-on-punish: true  volta ao mínimo depois de punir
+#   buffer:                  tolerância antes de contar uma violação
+#     enabled: true
+#     max: 3                 eventos acumulados para virar violação
+#     multiplier: 0.5        fração mantida depois de chegar ao máximo
+#     decay: 0.5             eventos perdoados por segundo
+#   punishment:
+#     actions: [KICK]        NONE, ALERT, CANCEL, DROP, KICK, COMMAND
+#     commands: []           usados por COMMAND; aceitam %player% %check% %type% %vl% %max-vl% %description% %infos%
+#     message: ""            motivo do KICK; vazio usa "kick" do arquivo de mensagens
+#   options: {}              valores próprios do check
+#
+# Tudo que for omitido usa o padrão do check, listado em docs/CHECKS.md. Por isso este arquivo mostra
+# apenas o que costuma ser ajustado.
+
+general:
+  language: pt-BR
+  debug: false
+  # Avisa quem tem permissão assim que entra no servidor.
+  alerts-on-join: true
+  # Para quem não tem permissão, /shanticrash responde como um comando que não existe.
+  hidden-command: false
+  # Permite que shanticrash.bypass ignore todos os checks. Deixe desligado se não tiver um motivo claro.
+  bypass-enabled: false
+
+protection:
+  # STRICT, BALANCED, COMPATIBILITY ou MONITOR_ONLY.
+  # Os modos mudam só os checks de taxa e volume (flood, byte-rate e risk.critical):
+  #   STRICT         limites 25% menores e punição mais cedo
+  #   BALANCED       valores deste arquivo
+  #   COMPATIBILITY  limites 50% maiores e punição mais tarde, para clientes com mods ou rede ruim
+  #   MONITOR_ONLY   esses checks só registram e alertam; pacotes estruturalmente inválidos continuam bloqueados
+  mode: BALANCED
+
+risk:
+  # Pontuação por conexão que sobe a cada violação e cai pela metade a cada half-life segundos.
+  enabled: true
+  half-life: 60
+  thresholds:
+    moderate: 10
+    high: 25
+    critical: 50
+  weights:
+    # Pacote que um cliente funcionando não envia.
+    structural: 3.0
+    # Excesso de taxa ou volume.
+    behavioral: 1.0
+  # A partir do nível moderado, os limites de taxa ficam multiplicados por este fator até a pontuação cair.
+  moderate-rate-factor: 0.75
+  # No nível crítico, risk.critical só é acionado com esta quantidade de violações estruturais
+  # dentro de evidence-window segundos.
+  critical-evidence: 5
+  evidence-window: 30
+
+connection:
+  # Conexões simultâneas por endereço IP, contando status, login e jogo. 0 desliga.
+  max-per-address: 10
+  # Não limita 127.0.0.1 e ::1.
+  exempt-loopback: true
+  # Atrás de BungeeCord ou Velocity todas as conexões chegam com o IP do proxy. Se o proxy for detectado e
+  # esta lista estiver vazia, o limite fica desligado. Com a lista preenchida, só as conexões que não vêm
+  # desses endereços são limitadas.
+  trusted-proxies: []
+
+profiler:
+  # Duração de uma sessão de /shanticrash profile, em segundos.
+  duration: 60
+  # Mede o tempo de 1 a cada N pacotes do jogador.
+  sample-every: 1
+  max-sessions: 5
+
+discord:
+  enabled: false
+  # A URL nunca aparece em logs nem em comandos. Trate-a como senha.
+  webhook-url: ""
+  username: ShAntiCrash
+  timeout-ms: 3000
+  max-per-minute: 10
+  # Ocorrências repetidas do mesmo jogador e check dentro deste intervalo viram uma mensagem só.
+  group-seconds: 10
+  queue-capacity: 100
+  # Também envia violações que não puniram. Pode gerar muitas mensagens.
+  include-flags: false
+
+outgoing-sanitizer:
+  # Ajusta itens enviados ao cliente (lore, nomes e itens aninhados) quando passam destes limites.
+  # Não muda o item no servidor, só a cópia enviada. Desligado por padrão.
+  enabled: false
+  max-lore-lines: 256
+  max-name-chars: 2048
+  max-text-nodes: 512
+  max-nested-depth: 4
+
+performance:
+  # Conexões monitoradas ao mesmo tempo. Acima disso, novas conexões são recusadas.
+  max-player-data: 5000
+  # Intervalo, em segundos, da limpeza de estado de conexões já fechadas.
+  cleanup-interval: 300
+  # Mede o tempo de cada pacote. Custa duas leituras de relógio por pacote; deixe ligado só para investigar.
+  packet-monitoring: false
+  # Com o monitoramento ligado, registra os pacotes acima deste tempo, em nanossegundos.
+  heavy-packet-threshold: 5000000
+  # Diagnóstico: registra a pilha de uma thread Netty presa no mesmo pacote. Não interfere na conexão.
+  # Pausa a thread por um instante ao amostrar, então não deixe ligado em produção.
+  netty-watchdog:
+    enabled: false
+    max-time: 50
+    check-frequency: 25
+    report-cooldown: 5000
+
+item-protection:
+  # O que fazer com itens que passaram pela análise, antes de chegarem ao servidor.
+  #   NONE      nada é alterado.
+  #   SMART     em pacotes de clique, remove os dados dos itens grandes (smart-item-bytes do check item.decoding-guard).
+  #   CREATIVE  no slot criativo, mantém só os dados listados abaixo. Cliques não são alterados.
+  #   ALL       as duas coisas, para todos os itens de clique.
+  #
+  # Remover dados de um clique é seguro: esses itens são apenas a opinião do cliente sobre o resultado,
+  # e o servidor reenvia a janela se discordar. O preço é uma atualização extra de janela. A partir do
+  # 1.21.5 os cliques só trazem hashes, então não há nada para remover.
+  #
+  # No slot criativo, o item é a própria fonte dos dados. CREATIVE e ALL realmente apagam o que não está
+  # na lista, como conteúdo de baús e livros: use apenas se os jogadores criativos não precisam disso.
+  disable-item-decoding: SMART
+  # Componentes mantidos no slot criativo (1.20.5+).
+  creative-exempt-components:
+    - custom_name
+    - item_name
+    - lore
+    - enchantments
+    - stored_enchantments
+    - damage
+    - dyed_color
+    - potion_contents
+  # Tags mantidas no slot criativo (antes do 1.20.5).
+  creative-exempt-nbt:
+    - display
+    - ench
+    - Enchantments
+    - StoredEnchantments
+    - Damage
+    - RepairCost
+    - HideFlags
+    - Unbreakable
+    - CustomPotionColor
+    - Potion
+
+  # Itens dentro de itens. Um item de inventário é 1, um baú com itens é 2, um shulker no baú é 3.
+  max-item-depth: 4
+  # Inclui itens aninhados. O padrão é uma grande janela de 54 slots com um shulker de 27 em cada: 54 x 27.
+  max-items-per-packet: 1458
+  # Por item ou pacote de clique. O protocolo aceita até 512; itens reais raramente passam de 16.
+  max-nbt-depth: 32
+  # Soma das tags de um pacote. Um baú cheio de itens encantados tem cerca de 3 mil.
+  max-nbt-nodes: 32768
+  # Bytes por string. 32767 é o maior texto que o próprio cliente pode gerar.
+  max-string-length: 32767
+  # Elementos por array NBT. 16384 é o tamanho dos dados de um mapa, o maior array de uso normal.
+  max-array-length: 16384
+  # Elementos por lista NBT ou lista dentro de um componente. Baús têm 27, lore tem até 256.
+  max-list-length: 1024
+  # Limites por tipo de componente, abaixo do limite geral de listas.
+  max-container-items: 96
+  max-charged-projectiles: 16
+  max-profile-properties: 16
+  max-profile-bytes: 8192
+  max-tool-rules: 96
+  max-bundle-items: 64
+  max-lore-lines: 256
+  # Blocos e propriedades somados em can_break e can_place_on.
+  max-predicates: 64
+  # Componentes adicionados mais removidos por item. O jogo define pouco mais de 90 tipos.
+  max-component-count: 64
+  # Bytes de um item serializado. Um shulker de livros grandes chega perto disso.
+  max-item-bytes: 131072
+  # Vanilla recusa mais que 128 slots alterados em um clique.
+  max-changed-slots: 128
+  # Maior quantidade que cabe no campo do protocolo antigo. Vanilla permite no máximo 99.
+  max-amount: 127
+  # 100 páginas de 1024 caracteres é o limite do cliente; 3072 bytes é o pior caso em UTF-8.
+  max-book-pages: 100
+  max-book-page-bytes: 3072
+  # Tempo máximo da análise de um pacote, em nanossegundos. A análise é limitada pelo tamanho do pacote e
+  # leva poucos milissegundos, então passar disso costuma ser uma pausa da JVM. Se ela estava em andamento,
+  # para e descarta o pacote; se já tinha terminado, apenas alerta. 0 desativa.
+  max-processing-nanos: 200000000
+  # Limites para texto serializado (nome, lore, livro).
+  text:
+    # Ocorrências por string de "translate" e "extra". Textos em gradiente usam muitos "extra".
+    max-translate: 16
+    max-extra: 1024
+    # Aninhamento de chaves e colchetes.
+    max-depth: 64
+    # Nós por texto, em itens com componentes.
+    max-nodes: 4096
+    # Soma dos nós de todos os textos de um pacote.
+    max-total-nodes: 16384
+
+violations:
+  enabled: true
+  # Quantas violações ficam guardadas por conexão, para /shanticrash violations.
+  history-size: 32
+
+punishments:
+  enabled: true
+  # Usada pelos checks cuja ação padrão é KICK e que não definem punishment.actions.
+  default-action: KICK
+  # Tempo mínimo entre duas punições do mesmo jogador, em milissegundos.
+  cooldown: 1000
+  # Comandos de punição aguardando execução. O excedente é descartado.
+  max-queued-commands: 256
+
+alerts:
+  enabled: true
+  # Grava cada alerta no log de eventos.
+  store: true
+  # Também mostra os alertas no console.
+  console: false
+  # Tempo mínimo entre alertas do mesmo jogador no mesmo check, em milissegundos.
+  cooldown: 1000
+  # Limite global. Um ataque com muitas contas não pode inundar o chat dos administradores.
+  max-per-second: 20
+  # Categorias que não geram alerta para ninguém. Exemplo: [flood, tab]
+  disabled-categories: []
+
+logging:
+  enabled: true
+  # Registra pacotes cancelados, no máximo um por segundo por conexão.
+  cancelled-packets: true
+  # FILE, CONSOLE ou BOTH.
+  output: FILE
+  # Tamanho máximo de cada arquivo em logs/. São no máximo 20 arquivos por dia.
+  max-file-size-mb: 10
+  retention-days: 14
+  # Linhas aguardando gravação. Se encher, as novas são descartadas para não atrasar os pacotes.
+  queue-capacity: 8192
+
+integrations:
+  geyser:
+    enabled: true
+    # A tradução do Geyser envia rajadas que um cliente Java não envia. Multiplica os limites de flood.
+    flood-multiplier: 2.0
+  floodgate:
+    enabled: true
+  viaversion:
+    enabled: true
+    # Clientes muito antigos enviam movimento todo tick, mesmo parados, e a tradução soma pacotes.
+    old-client-flood-multiplier: 1.5
+    old-client-below-protocol: 107
+  # ViaBackwards e ViaRewind usam as mesmas opções de viaversion. O plugin vê os pacotes já traduzidos
+  # para o formato do servidor, então os checks de estrutura valem igualmente para todos os clientes.
+  #
+  # Clientes modificados legítimos:
+  #   Printers e schematics: veja checks.place.printer e checks.flood.packet-limits.options.printer-multiplier.
+  #   Canais de mods com mensagens grandes: use checks.payload.size.options.exempt-channels.
+  #     O AxiomPaper, por exemplo, precisa de ["axiom:*"].
+
+# Opcionais e independentes dos checks. Alteram o comportamento do jogo, por isso vêm desligados.
+mechanics:
+  # Tempo mínimo entre usos de portal, em milissegundos. -1 desliga.
+  nether-portal-delay: -1
+  # Velocidade máxima de flechas em blocos por tick. O disparo vanilla mais rápido é cerca de 3. -1 desliga.
+  max-arrow-velocity: -1
+  # Tempo mínimo entre tosquias do mesmo jogador, em milissegundos. -1 desliga.
+  shears-cooldown: -1
+  # Fecha o inventário aberto de quem quebra um bloco.
+  break-close-inventory: false
+  # Tempo mínimo entre aberturas de contêineres, em milissegundos. -1 desliga.
+  interact-container-delay: -1
+  # Limite de atualizações de redstone em trilhos, alçapões e comparadores, por chunk.
+  # É um limite genérico de volume. Máquinas grandes de redstone podem ser afetadas.
+  redstone-throttle:
+    enabled: false
+    max-per-chunk-per-second: 512
+
+checks:
+  netty:
+    enabled: true
+    frame-size:
+      vl: { punish-at: 1 }
+      options:
+        # Ligado, usa automatic-legacy-bytes até o 1.12 e automatic-modern-bytes depois.
+        automatic: true
+        automatic-legacy-bytes: 65536
+        automatic-modern-bytes: 262144
+        max-play-bytes: 262144
+        # BungeeCord envia dados do perfil no handshake.
+        max-handshake-bytes: 65536
+        # 1 MiB é o limite vanilla de respostas de login e também atende aos mods grandes.
+        max-login-bytes: 1048576
+        max-configuration-bytes: 1048576
+    small-packet:
+      options:
+        max-bytes: 2048
+    pre-play-flood:
+      options:
+        packets-per-second: 100
+        burst: 1024
+    byte-rate:
+      options:
+        bytes-per-second: 2097152
+        burst-bytes: 16777216
+    connection-state: {}
+    malformed:
+      vl: { punish-at: 3 }
+    # Falha do decodificador, que pode ser incompatibilidade. Descarta o pacote, mas só alerta.
+    decode-failure:
+      vl: { punish-at: 20 }
+      punishment: { actions: [ALERT] }
+    # Só funciona com performance.packet-monitoring ligado.
+    processing-time:
+      punishment: { actions: [ALERT] }
+
+  flood:
+    enabled: true
+    # Soma de todos os pacotes de uma conexão.
+    global:
+      vl: { punish-at: 3 }
+      options:
+        packets-per-second: 800
+        burst: 2500
+        # Negações dentro de observation-ms que contam uma violação.
+        observation-ms: 2000
+        max-overflows: 50
+        # Sem negações por este tempo, a contagem é esquecida.
+        recovery-ms: 10000
+        drop: true
+    # Pacotes grandes têm um limite só deles.
+    big-frames:
+      vl: { punish-at: 3 }
+      options:
+        threshold-bytes: 4096
+        packets-per-second: 8
+        burst: 40
+    # Limite por tipo de pacote.
+    #   rate: pacotes por segundo sustentados       burst: rajada permitida
+    #   observation-ms, max-overflows, recovery-ms: como em global (padrão 1000, 20 e 5000)
+    #   drop: descarta o excedente. Desligado apenas conta violações; movimento descartado causaria
+    #         puxões no jogador, por isso esses tipos não descartam.
+    # Grupos sem limite aqui usam os valores listados em docs/CHECKS.md.
+    packet-limits:
+      vl: { punish-at: 6 }
+      options:
+        # Multiplica o limite de BLOCK_PLACE para quem está em modo printer.
+        printer-multiplier: 3.0
+        # Janelas deslizantes exatas opcionais. Desligadas inicialmente para calibrar falsos positivos.
+        # Ao ativar, cada conexão terá no máximo 4 regras por grupo; limite max entre 1 e 512.
+        # Ações: DROP = descarta e registra VL, FLAG = registra VL, COUNT = somente conta.
+        # Limites de bytes são inclusivos; max-bytes omitido significa sem limite de tamanho.
+        # Em servidores Bedrock/modded, comece com action: FLAG e ajuste conforme logs.
+        advanced-rules-enabled: false
+        advanced-rules:
+          CLICK_WINDOW:
+            - { interval-ms: 200, max: 36, max-bytes: 2048, action: FLAG }
+            - { interval-ms: 80, max: 10, max-bytes: 2048, action: FLAG }
+            - { interval-ms: 200, max: 20, min-bytes: 2049, action: FLAG }
+            - { interval-ms: 80, max: 5, min-bytes: 2049, action: FLAG }
+          CREATIVE_SLOT:
+            - { interval-ms: 200, max: 20, action: FLAG }
+          EDIT_BOOK:
+            - { interval-ms: 500, max: 5, action: FLAG }
+        limits:
+          MOVEMENT: { rate: 100, burst: 400, drop: false }
+          CLICK_WINDOW: { rate: 60, burst: 200, drop: true }
+          CREATIVE_SLOT: { rate: 50, burst: 150, drop: true }
+          BLOCK_PLACE: { rate: 40, burst: 120, drop: false }
+          PLUGIN_MESSAGE: { rate: 60, burst: 400, drop: true }
+          TAB_COMPLETE: { rate: 20, burst: 60, drop: true }
+          CHAT: { rate: 10, burst: 30, drop: true }
+          EDIT_BOOK: { rate: 2, burst: 8, drop: true }
+          CRAFT_RECIPE: { rate: 15, burst: 45, drop: true }
+
+  window:
+    enabled: true
+    invalid-slot:
+      options: { max-slot: 1024 }
+    invalid-id:
+      options: { max-id: 255 }
+    invalid-mode: {}
+    # Só alerta: um clique em trânsito durante a troca de janela causa isso sem má intenção.
+    mismatch:
+      punishment: { actions: [ALERT] }
+    drag-sequence:
+      punishment: { actions: [ALERT] }
+      options: { max-drag-slots: 512 }
+    hashed-stacks:
+      options:
+        max-changed-slots: 128
+        max-components-per-stack: 96
+        max-total-components: 512
+    simple-packets:
+      options: { max-id: 255 }
+
+  item:
+    enabled: true
+    # Desligar item.analysis desliga todos os limites abaixo. Os valores estão em item-protection.
+    analysis: {}
+    decoding-guard:
+      options:
+        # Itens a partir deste tamanho perdem os dados em cliques, no modo SMART.
+        smart-item-bytes: 2048
+    nbt-depth: {}
+    nbt-nodes: {}
+    string-length: {}
+    array-length: {}
+    list-length: {}
+    item-bytes: {}
+    items-per-packet: {}
+    item-depth: {}
+    component-count: {}
+    text-complexity: {}
+    amount: {}
+    book-content: {}
+    changed-slots: {}
+    processing-time:
+      punishment: { actions: [ALERT] }
+
+  creative:
+    enabled: true
+    not-creative:
+      options:
+        # Pacotes recebidos logo após a troca de modo de jogo são só descartados.
+        grace-ms: 3000
+    invalid-slot:
+      options: { max-slot: 45 }
+    item-size:
+      options: { max-bytes: 65536 }
+    invalid-amount:
+      options: { max-amount: 127 }
+    # Só alerta: copiar uma placa com o botão do meio pode causar isso.
+    run-command:
+      punishment: { actions: [ALERT] }
+
+  place:
+    enabled: true
+    invalid-placement:
+      options:
+        # Mods de colocação precisa guardam dados no cursor, bem fora de 0 a 1.
+        max-cursor: 1024
+    legacy-header: {}
+    invalid-use: {}
+    invalid-dig: {}
+    invalid-interact:
+      options: { max-target-offset: 64 }
+    # Detecta construção sustentada em alta velocidade e aumenta o limite de colocação do jogador.
+    # Ligue apenas se o servidor permite printers: quem ataca também consegue manter essa velocidade.
+    printer:
+      options:
+        automatic: false
+        place-threshold: 10
+        sustained-seconds: 3
+        idle-ms: 3000
+
+  position:
+    enabled: true
+    format: {}
+    invalid-numbers: {}
+    bounds:
+      options:
+        max-horizontal: 30000512
+        max-vertical: 20000000
+    rotation:
+      options:
+        max-pitch: 90.5
+        max-yaw: 10000000
+
+  payload:
+    enabled: true
+    size:
+      options:
+        max-bytes: 32767
+        # Canais que podem passar do limite. * só no final.
+        exempt-channels: []
+    invalid-channel:
+      options: { max-length: 256 }
+    register:
+      options:
+        max-per-packet: 1024
+        max-per-connection: 4096
+        max-name-bytes: 256
+    brand:
+      options:
+        max-bytes: 256
+        max-packets: 8
+    # Canais bloqueados. Nenhum por padrão, pois quase tudo que usa isso é legítimo. Exemplo: ["wdl:*"]
+    blocked-channel:
+      options: { channels: [] }
+
+  book:
+    enabled: true
+    content:
+      options:
+        max-pages: 100
+        max-page-bytes: 3072
+        max-total-bytes: 65536
+        max-title-bytes: 384
+        max-slot: 45
+    legacy-item:
+      options: { max-bytes: 65536 }
+    sign-text:
+      options: { max-line-bytes: 1536 }
+    item-name:
+      options: { max-bytes: 1024 }
+
+  tab:
+    enabled: true
+    structure: {}
+    length:
+      options:
+        # O chat limita a 256 caracteres, mas a tela do bloco de comando usa este pacote com textos maiores.
+        max-bytes: 8192
+    pattern:
+      vl: { punish-at: 10 }
+      options:
+        max-brackets: 32
+        prefixes: ["/to ", "//to ", "/calc ", "//calc", "//eval", "//solve", "/solve"]
+        contains: ["for(", "while(", "^(.", "targetoffset"]
+
+  command:
+    enabled: true
+    length:
+      options:
+        max-chat-bytes: 1024
+        max-command-bytes: 8192
+    illegal-characters: {}
+    # Comandos conhecidos por travar servidores com certos argumentos. Só as formas perigosas estão aqui,
+    # o uso normal dos mesmos plugins continua funcionando. Esvazie se suas versões já corrigiram isso.
+    blocked:
+      options:
+        commands:
+          - "//calc"
+          - "//calculate"
+          - "//eval"
+          - "//evaluate"
+          - "//solve"
+          - "/hd readtext"
+          - "/holo readtext"
+          - "/hologram readtext"
+          - "/holograms readtext"
+          - "/holographicdisplays readtext"
+          - "/mv ^"
+          - "/mv help ^"
+          - "/mvhelp ^"
+          - "/mv <"
+          - "/mv help <"
+          - "/mvhelp <"
+          - "/$"
+    complexity:
+      options:
+        max-brackets: 32
+        max-arguments: 256
+
+  recipe:
+    enabled: true
+    invalid-request:
+      options:
+        max-id-length: 256
+        max-window-id: 255
+    invalid-displayed:
+      options: { max-id-length: 256 }
